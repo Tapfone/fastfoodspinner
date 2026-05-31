@@ -2,39 +2,104 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fast Food Spinner</title>
     <style>
-        :root {
-            --primary-red: #d32f2f;
-            --wheel-border: #222;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: #f4f4f9;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             min-height: 100vh;
-            margin: 0;
-            background-color: #f8f9fa;
-            touch-action: manipulation;
-            position: relative;
-            box-sizing: border-box;
-            padding-bottom: 60px; /* Leaves space so the footer doesn't overlap content */
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
         }
 
-        h1 { margin-top: 20px; margin-bottom: 20px; color: #333; font-size: 1.6rem; text-align: center; }
+        header h1 {
+            color: #000000;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
 
+        /* Main Container for 3D effect */
         .spinner-container {
             position: relative;
-            width: 92vw;
-            max-width: 480px;
-            aspect-ratio: 1 / 1;
-            box-sizing: border-box;
+            width: 90vw;
+            max-width: 420px;
+            height: 90vw;
+            max-height: 420px;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
+        /* 3D Wheel Shadow & Border Outer Ring */
+        .wheel-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 
+                        0 5px 15px rgba(0, 0, 0, 0.2),
+                        inset 0 -8px 0px rgba(0,0,0,0.2);
+            background: #111;
+            padding: 8px; /* Outer rim width */
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: block;
+            background: #fff;
+        }
+
+        /* Center Spin Button */
+        .spin-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: #ffffff;
+            color: #000;
+            border-radius: 50%;
+            border: 4px solid #111;
+            font-weight: 800;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3), 
+                        inset 0 -4px 0 #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            z-index: 10;
+            user-select: none;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .spin-btn:active {
+            transform: translate(-50%, -46%);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3), 
+                        inset 0 -1px 0 #ccc;
+        }
+
+        /* Starting Point / Indicator Arrow */
         .pointer {
             position: absolute;
             top: -12px;
@@ -42,166 +107,325 @@
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 30px solid var(--wheel-border);
-            z-index: 25;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 28px solid #000000;
+            z-index: 20;
+            filter: drop-shadow(0px 4px 3px rgba(0,0,0,0.3));
         }
 
-        #start-hub {
-            position: absolute;
+        /* Winner Announcement Modal Card */
+        .result-card {
+            visibility: hidden;
+            opacity: 0;
+            position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70px;
-            height: 70px;
-            background: #fff;
-            border: 4px solid var(--wheel-border);
-            border-radius: 50%;
-            z-index: 30;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-            transition: 0.1s;
-        }
-
-        #start-hub:active { transform: translate(-50%, -50%) scale(0.9); }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 6px solid var(--wheel-border);
-            box-sizing: border-box; /* Keeps the border within the dimensions for perfect alignment */
-            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
-        }
-
-        #result-container {
-            margin-top: 25px;
-            height: 50px;
-        }
-
-        .go-button {
-            display: none;
-            padding: 14px 28px;
-            background-color: #000;
-            color: white;
-            text-decoration: none;
-            border-radius: 30px;
-            font-weight: bold;
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-
-        /* Updated Footer Styles */
-        footer {
-            position: absolute;
-            bottom: 15px;
-            left: 0;
-            width: 100%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: white;
+            padding: 25px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             text-align: center;
+            z-index: 100;
+            width: 85%;
+            max-width: 340px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .result-card.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .result-card h2 {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .result-card .restaurant-name {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+
+        .order-link {
+            display: inline-block;
+            background: #000;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-weight: 700;
+            text-transform: uppercase;
             font-size: 0.9rem;
-            color: #000; /* Made text solid black */
-            font-weight: 500;
+            letter-spacing: 0.5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .order-link:active {
+            transform: scale(0.95);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 99;
+            transition: opacity 0.3s ease;
+        }
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        footer {
+            color: #000000;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
-    <h1>Fast Food Spinner</h1>
+    <header>
+        <h1>Fast Food Spinner</h1>
+    </header>
 
     <div class="spinner-container">
         <div class="pointer"></div>
-        <div id="start-hub" onclick="spin()">SPIN</div>
-        <canvas id="wheel" width="600" height="600"></canvas>
+        <div class="wheel-wrapper">
+            <canvas id="wheelCanvas" width="500" height="500"></canvas>
+        </div>
+        <div class="spin-btn" id="spinBtn">Spin</div>
     </div>
 
-    <div id="result-container">
-        <a id="result-link" class="go-button" target="_blank"></a>
+    <!-- Alert Modal Box for Result -->
+    <div class="overlay" id="overlay"></div>
+    <div class="result-card" id="resultCard">
+        <h2>You Landed On:</h2>
+        <div class="restaurant-name" id="winnerName">McDonalds</div>
+        <a href="#" target="_blank" class="order-link" id="orderLink">Order Now</a>
     </div>
 
-    <footer>Tapfone &copy; 2026</footer>
+    <footer>
+        Tapfone &copy; 2026
+    </footer>
 
     <script>
-        const canvas = document.getElementById('wheel');
-        const ctx = canvas.getContext('2d');
-        const resultLink = document.getElementById('result-link');
-
         const restaurants = [
-            { name: "McDonald's", color: "#FFC72C", text: "#000", url: "https://www.mcdonalds.com/ca/en-ca.html" },
-            { name: "Burger King", color: "#F5EBDC", text: "#000", url: "https://www.burgerking.ca/" },
-            { name: "Taco Bell", color: "#702082", text: "#fff", url: "https://www.tacobell.ca/" },
-            { name: "Wendy's", color: "#E21836", text: "#fff", url: "https://www.wendys.com/en-ca" },
-            { name: "Domino's", color: "#006491", text: "#fff", url: "https://www.dominos.ca/" },
-            { name: "KFC", color: "#A3080C", text: "#fff", url: "https://www.kfc.ca/" },
-            { name: "Subway", color: "#008C15", text: "#fff", url: "https://www.subway.com/en-CA" },
-            { name: "Pizza Hut", color: "#ee3124", text: "#fff", url: "https://www.pizzahut.ca/" },
-            { name: "Mucho Burrito", color: "#f7941d", text: "#000", url: "https://muchoburrito.com/" },
-            { name: "Popeyes", color: "#ff8200", text: "#000", url: "https://www.popeyeschicken.ca/" },
-            { name: "A&W", color: "#5c2f00", text: "#fff", url: "https://web.aw.ca/en/home" },
-            { name: "Tim Hortons", color: "#c8102e", text: "#fff", url: "https://www.timhortons.ca/" }
+            { name: "Subway", color: "#008C45", textColor: "#FFC72C", url: "https://www.subway.com/en-ca" },
+            { name: "Pizza Hut", color: "#E51937", textColor: "#FFFFFF", url: "https://www.pizzahut.ca" },
+            { name: "Mucho Burrito", color: "#5C0614", textColor: "#EAA222", url: "https://muchoburrito.com" },
+            { name: "Popeyes", color: "#F15A24", textColor: "#005596", url: "https://www.popeyeschicken.ca" },
+            { name: "A&W", color: "#004B87", textColor: "#FFFFFF", url: "https://web.aw.ca" },
+            { name: "Tim Hortons", color: "#C8102E", textColor: "#FFFFFF", url: "https://www.timhortons.ca" },
+            { name: "McDonalds", color: "#DA291C", textColor: "#FFC72C", url: "https://www.mcdonalds.com/ca/en-ca.html" },
+            { name: "Burger King", color: "#54301A", textColor: "#F2A900", url: "https://www.bk.do" }, // Fallback standard international or redirected to local app/site
+            { name: "Taco Bell", color: "#702082", textColor: "#FFFFFF", url: "https://www.tacobell.ca" },
+            { name: "Wendys", color: "#E21838", textColor: "#FFFFFF", url: "https://www.wendys.com/en-ca" },
+            { name: "Dominos", color: "#006491", textColor: "#E31937", url: "https://www.dominos.ca" },
+            { name: "KFC", color: "#A3080C", textColor: "#FFFFFF", url: "https://www.kfc.ca" }
         ];
 
-        let currentRotation = 0;
-        let isSpinning = false;
-        const sliceAngle = (2 * Math.PI) / restaurants.length;
+        // Ensure URLs match Canadian setups
+        restaurants[7].url = "https://www.burgerking.ca"; 
 
+        const canvas = document.getElementById("wheelCanvas");
+        const ctx = canvas.getContext("2d");
+        const spinBtn = document.getElementById("spinBtn");
+        const resultCard = document.getElementById("resultCard");
+        const winnerName = document.getElementById("winnerName");
+        const orderLink = document.getElementById("orderLink");
+        const overlay = document.getElementById("overlay");
+
+        const size = restaurants.length;
+        const arc = Math.PI / (size / 2);
+        let startAngle = 0;
+        let spinTimeout = null;
+
+        let spinArcStart = 10;
+        let spinTime = 0;
+        let spinTimeTotal = 0;
+
+        // Audio Context setup for synthetically creating "Tick" sounds without files
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTickSound() {
+            if (!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.04);
+                
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.04);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch (e) { console.log("Audio play error", e); }
+        }
+
+        function playWinSound() {
+            if (!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(554.37, audioCtx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.2);
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.3);
+                
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } catch (e) {}
+        }
+
+        // Draw Wheel Graphics
         function drawWheel() {
-            restaurants.forEach((res, i) => {
-                const angle = i * sliceAngle;
+            const cx = 250;
+            const cy = 250;
+            const r = 240;
+
+            ctx.clearRect(0,0,500,500);
+
+            for(let i = 0; i < size; i++) {
+                const angle = startAngle + i * arc;
+                ctx.fillStyle = restaurants[i].color;
+
                 ctx.beginPath();
-                ctx.fillStyle = res.color;
-                ctx.moveTo(300, 300);
-                ctx.arc(300, 300, 300, angle, angle + sliceAngle);
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, angle, angle + arc, false);
+                ctx.lineTo(cx, cy);
                 ctx.fill();
-                ctx.strokeStyle = "#fff";
-                ctx.lineWidth = 1;
+
+                // Subtle 3D section shadows
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                ctx.lineWidth = 2;
                 ctx.stroke();
 
+                // Draw Text labels
                 ctx.save();
-                ctx.translate(300, 300);
-                ctx.rotate(angle + sliceAngle / 2);
-                ctx.textAlign = "right";
-                ctx.fillStyle = res.text;
-                ctx.font = "bold 16px Arial";
-                ctx.fillText(res.name, 280, 5);
+                ctx.fillStyle = restaurants[i].textColor || "#FFFFFF";
+                ctx.translate(cx + Math.cos(angle + arc / 2) * (r - 75), cy + Math.sin(angle + arc / 2) * (r - 75));
+                ctx.rotate(angle + arc / 2 + Math.PI / 2);
+                
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = "center";
+                
+                // Truncate text context slightly if wide
+                let text = restaurants[i].name;
+                ctx.fillText(text, 0, 0);
                 ctx.restore();
-            });
+            }
+
+            // Outer Canvas 3D Inner shading rim
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2, true);
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = "rgba(255,255,255,0.2)";
+            ctx.stroke();
         }
 
-        function spin() {
-            if (isSpinning) return;
-            isSpinning = true;
-            resultLink.style.display = 'none';
-            
-            const spinDegrees = (360 * 10) + Math.floor(Math.random() * 360);
-            currentRotation += spinDegrees;
-            canvas.style.transform = `rotate(${currentRotation}deg)`;
+        let lastTrackedAngleIndex = 0;
 
-            setTimeout(() => {
-                isSpinning = false;
-                calculateWinner();
-            }, 5000);
+        function rotateWheel() {
+            spinTime += 30;
+            if(spinTime >= spinTimeTotal) {
+                stopRotateWheel();
+                return;
+            }
+            const spinAngle = spinArcStart - easeOut(spinTime, 0, spinArcStart, spinTimeTotal);
+            startAngle += (spinAngle * Math.PI / 180);
+            drawWheel();
+
+            // Handle ticking noise whenever a new partition crosses the top (index calculation)
+            // Top point is 1.5 * Math.PI radians (270 degrees)
+            const currentWinnerIndex = calculateCurrentWinnerIndex();
+            if (currentWinnerIndex !== lastTrackedAngleIndex) {
+                playTickSound();
+                lastTrackedAngleIndex = currentWinnerIndex;
+            }
+
+            spinTimeout = setTimeout(rotateWheel, 30);
         }
 
-        function calculateWinner() {
-            const normalized = (currentRotation % 360);
-            const winningAngle = (360 - normalized + 270) % 360;
-            const index = Math.floor(winningAngle / (360 / restaurants.length));
+        function calculateCurrentWinnerIndex() {
+            const degrees = startAngle * 180 / Math.PI + 90; // offset for top indicator pointer
+            const arcd = arc * 180 / Math.PI;
+            let index = Math.floor((360 - (degrees % 360)) / arcd);
+            if (index < 0) index = size + index;
+            return index % size;
+        }
+
+        function stopRotateWheel() {
+            clearTimeout(spinTimeout);
+            const index = calculateCurrentWinnerIndex();
             const winner = restaurants[index];
 
-            resultLink.href = winner.url;
-            resultLink.innerText = `ORDER ${winner.name.toUpperCase()} ➔`;
-            resultLink.style.display = 'inline-block';
-            resultLink.style.backgroundColor = winner.color;
-            resultLink.style.color = winner.text;
+            playWinSound();
+
+            // Apply Details to Modal View popup
+            winnerName.innerText = winner.name;
+            winnerName.style.color = winner.color;
+            orderLink.href = winner.url;
+            orderLink.style.backgroundColor = winner.color;
+            orderLink.style.color = winner.textColor || "#FFF";
+
+            overlay.classList.add("show");
+            resultCard.classList.add("show");
+            spinBtn.style.pointerEvents = "auto";
         }
 
+        function easeOut(t, b, c, d) {
+            const ts = (t /= d) * t;
+            const tc = ts * t;
+            return b + c * (tc + -3 * ts + 3 * t);
+        }
+
+        spinBtn.addEventListener("click", () => {
+            initAudio();
+            overlay.classList.remove("show");
+            resultCard.classList.remove("show");
+            spinBtn.style.pointerEvents = "none"; // Disable spamming during animation
+
+            spinArcStart = Math.random() * 10 + 12; // Base initial velocity speed
+            spinTime = 0;
+            spinTimeTotal = Math.random() * 2000 + 4000; // Total run runtime duration (4-6s)
+            
+            rotateWheel();
+        });
+
+        overlay.addEventListener("click", () => {
+            overlay.classList.remove("show");
+            resultCard.classList.remove("show");
+        });
+
+        // Initial setup run
         drawWheel();
     </script>
 </body>
