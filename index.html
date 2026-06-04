@@ -51,6 +51,7 @@
             transform: translate(-50%, -50%);
             width: 70px;
             height: 70px;
+            box-sizing: border-box; /* FIX: Keeps borders inside the 70x70px footprint */
             background: #fff;
             border: 4px solid var(--wheel-border);
             border-radius: 50%;
@@ -70,6 +71,7 @@
         canvas {
             width: 100%;
             height: 100%;
+            box-sizing: border-box; /* FIX: Keeps canvas layout predictable alongside the hub */
             border-radius: 50%;
             border: 6px solid var(--wheel-border);
             transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
@@ -150,7 +152,6 @@
                 ctx.textAlign = "right";
                 ctx.fillStyle = res.text;
                 ctx.font = "bold 16px Arial";
-                // Adjusting text position for more slices
                 ctx.fillText(res.name, 280, 5);
                 ctx.restore();
             });
